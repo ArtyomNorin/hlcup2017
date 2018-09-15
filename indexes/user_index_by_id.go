@@ -1,9 +1,9 @@
 package indexes
 
 import (
-	"encoding/json"
 	"hlcup/entities"
 	"sync"
+	"github.com/json-iterator/go"
 )
 
 type UserIndexById struct {
@@ -17,7 +17,7 @@ func NewUserIndexById() *UserIndexById {
 
 func (userIndexById *UserIndexById) AddUser(user *entities.User) error {
 
-	encodedUser, err := json.Marshal(user)
+	encodedUser, err := jsoniter.ConfigCompatibleWithStandardLibrary.Marshal(user)
 
 	if err != nil {
 		return err
@@ -25,7 +25,7 @@ func (userIndexById *UserIndexById) AddUser(user *entities.User) error {
 
 	userIndexById.mutex.Lock()
 
-	userIndexById.users[user.Id] = encodedUser
+	userIndexById.users[*user.Id] = encodedUser
 
 	userIndexById.mutex.Unlock()
 

@@ -2,7 +2,6 @@ package services
 
 import (
 	"archive/zip"
-	"encoding/json"
 	"fmt"
 	"hlcup/entities"
 	"hlcup/indexes"
@@ -12,6 +11,7 @@ import (
 	"sync"
 	"time"
 	"sort"
+	"github.com/json-iterator/go"
 )
 
 type Storage struct {
@@ -59,7 +59,7 @@ func (storage *Storage) Init(pathToArchive string, countConcurrentFiles int, wai
 
 					userCollection := new(entities.UserCollection)
 
-					err := json.Unmarshal(jsonOfFile, userCollection)
+					err := jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(jsonOfFile, userCollection)
 
 					if err != nil {
 						storage.errorLogger.Fatalln(err)
@@ -67,7 +67,6 @@ func (storage *Storage) Init(pathToArchive string, countConcurrentFiles int, wai
 
 					for _, user := range userCollection.Users {
 						storage.AddUser(user)
-						storage.AddEmail(user.Email)
 					}
 				}
 
@@ -77,7 +76,7 @@ func (storage *Storage) Init(pathToArchive string, countConcurrentFiles int, wai
 
 					locationCollection := new(entities.LocationCollection)
 
-					err := json.Unmarshal(jsonOfFile, locationCollection)
+					err := jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(jsonOfFile, locationCollection)
 
 					if err != nil {
 						storage.errorLogger.Fatalln(err)
@@ -94,7 +93,7 @@ func (storage *Storage) Init(pathToArchive string, countConcurrentFiles int, wai
 
 					visitCollection := new(entities.VisitCollection)
 
-					err := json.Unmarshal(jsonOfFile, visitCollection)
+					err := jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(jsonOfFile, visitCollection)
 
 					if err != nil {
 						storage.errorLogger.Fatalln(err)
@@ -165,6 +164,8 @@ func (storage *Storage) AddUser(user *entities.User) {
 	if err != nil {
 		storage.errorLogger.Fatalln(err)
 	}
+
+	storage.userIndexByEmail.AddEmail(*user.Email)
 }
 
 func (storage *Storage) AddLocation(location *entities.Location) {
@@ -185,19 +186,12 @@ func (storage *Storage) AddVisit(visit *entities.Visit) {
 	}
 }
 
-func (storage *Storage) AddVisitByLocationId(visit *entities.Visit) {
-
-	storage.visitIndexByLocationID.AddVisit(visit)
-}
-
 func (storage *Storage) AddVisitByUserId(visit *entities.Visit) {
-
 	storage.visitIndexByUserID.AddVisit(visit)
 }
 
-func (storage *Storage) AddEmail(email string) {
-
-	storage.userIndexByEmail.AddEmail(email)
+func (storage *Storage) AddVisitByLocationId(visit *entities.Visit) {
+	storage.visitIndexByLocationID.AddVisit(visit)
 }
 
 func (storage *Storage) GetUserById(userId uint) []byte {
@@ -210,9 +204,29 @@ func (storage *Storage) GetLocationById(locationId uint) []byte {
 	return storage.locationIndexByID.GetLocation(locationId)
 }
 
-func (storage *Storage) GetVisitId(visitId uint) []byte {
+func (storage *Storage) GetVisitById(visitId uint) []byte {
 
 	return storage.visitIndexByID.GetVisit(visitId)
+}
+
+func (storage *Storage) DeleteVisitFromLocation(locationId uint, visitId uint) {
+
+	storage.visitIndexByLocationID.DeleteVisit(locationId, visitId)
+}
+
+func (storage *Storage) DeleteVisitFromUser(userId uint, visitId uint) {
+
+	storage.visitIndexByUserID.DeleteVisit(userId, visitId)
+}
+
+func (storage *Storage) DeleteEmail(email string) {
+
+	storage.userIndexByEmail.DeleteEmail(email)
+}
+
+func (storage *Storage) IsEmailExist(email string) bool {
+
+	return storage.userIndexByEmail.IsEmailExist(email)
 }
 
 //TODO need to refactor: logic mix
@@ -236,9 +250,9 @@ func (storage *Storage) GetVisitedPlacesByUser(visitFilter *VisitsFilter) *entit
 
 		visit := new(entities.Visit)
 
-		visitBytes := storage.GetVisitId(visitId)
+		visitBytes := storage.GetVisitById(visitId)
 
-		err := json.Unmarshal(visitBytes, visit)
+		err := jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(visitBytes, visit)
 
 		if err != nil {
 			storage.errorLogger.Fatalln(err)
@@ -246,23 +260,23 @@ func (storage *Storage) GetVisitedPlacesByUser(visitFilter *VisitsFilter) *entit
 
 		location := new(entities.Location)
 
-		locationBytes := storage.GetLocationById(visit.Location)
+		locationBytes := storage.GetLocationById(*visit.Location)
 
-		err = json.Unmarshal(locationBytes, location)
+		err = jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(locationBytes, location)
 
 		if err != nil {
 			storage.errorLogger.Fatalln(err)
 		}
 
 		if
-		!visitFilter.CheckFromDate(visit.VisitedAt) ||
-			!visitFilter.CheckToDate(visit.VisitedAt) ||
-			!visitFilter.CheckToDistance(location.Distance) ||
-			!visitFilter.CheckCountry(location.Country) {
+		!visitFilter.CheckFromDate(*visit.VisitedAt) ||
+			!visitFilter.CheckToDate(*visit.VisitedAt) ||
+			!visitFilter.CheckToDistance(*location.Distance) ||
+			!visitFilter.CheckCountry(*location.Country) {
 			continue
 		}
 
-		visitedPlace := &entities.VisitedPlace{VisitedAt: visit.VisitedAt, Mark: visit.Mark, Place: location.Place}
+		visitedPlace := &entities.VisitedPlace{VisitedAt: *visit.VisitedAt, Mark: *visit.Mark, Place: *location.Place}
 
 		visitedPlaceCollection.VisitedPlaces = append(visitedPlaceCollection.VisitedPlaces, visitedPlace)
 	}

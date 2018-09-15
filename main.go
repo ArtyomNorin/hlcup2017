@@ -24,7 +24,7 @@ func main() {
 
 	startTime := time.Now()
 
-	storage.Init("/home/artyomnorin/projects/go/src/hlcup/data/full/data.zip", 4, waitGroup)
+	storage.Init("/tmp/data/data.zip", 4, waitGroup)
 
 	waitGroup.Wait()
 
@@ -34,8 +34,8 @@ func main() {
 	runtime.GC()
 	PrintMemUsage()
 
-	userApiHandler := handlers.NewUserApiHandler(storage, errorLogger, infoLogger, "/home/artyomnorin/projects/go/src/hlcup/data/full/options.txt")
-	locationApiHandler := handlers.NewLocationApiHandler(storage, errorLogger, infoLogger, "/home/artyomnorin/projects/go/src/hlcup/data/full/options.txt")
+	userApiHandler := handlers.NewUserApiHandler(storage, errorLogger, infoLogger, "/tmp/data/options.txt")
+	locationApiHandler := handlers.NewLocationApiHandler(storage, errorLogger, infoLogger, "/tmp/data/options.txt")
 	visitApiHandler := handlers.NewVisitApiHandler(storage, errorLogger, infoLogger)
 
 	router := fasthttprouter.New()
@@ -47,8 +47,12 @@ func main() {
 	router.GET("/users/:user_id/visits", userApiHandler.GetVisitedPlaces)
 	router.GET("/locations/:location_id/avg", locationApiHandler.GetAverageMark)
 
+	router.POST("/users/:user_id", userApiHandler.CreateOrUpdate)
+	router.POST("/locations/:location_id", locationApiHandler.CreateOrUpdate)
+	router.POST("/visits/:visit_id", visitApiHandler.CreateOrUpdate)
+
 	infoLogger.Println("Server is listening...")
-	err := fasthttp.ListenAndServe(":8080", router.Handler)
+	err := fasthttp.ListenAndServe(":80", router.Handler)
 
 	if err != nil {
 		errorLogger.Fatalln(err)

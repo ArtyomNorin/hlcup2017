@@ -19,3 +19,19 @@ func (userIndexByEmail *UserIndexByEmail) AddEmail(email string) {
 
 	userIndexByEmail.mutex.Unlock()
 }
+
+func (userIndexByEmail *UserIndexByEmail) IsEmailExist(email string) bool {
+
+	_, isEmailExist := userIndexByEmail.emails[email]
+
+	return isEmailExist
+}
+
+func (userIndexByEmail *UserIndexByEmail) DeleteEmail(email string) {
+
+	userIndexByEmail.mutex.Lock()
+
+	delete(userIndexByEmail.emails, email)
+
+	userIndexByEmail.mutex.Unlock()
+}

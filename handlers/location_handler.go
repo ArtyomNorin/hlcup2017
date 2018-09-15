@@ -11,7 +11,8 @@ import (
 	"time"
 	"hlcup/entities"
 	"math"
-	"encoding/json"
+	"github.com/json-iterator/go"
+	"strings"
 )
 
 type LocationApiHandler struct {
@@ -42,7 +43,7 @@ func (locationApiHandler *LocationApiHandler) GetById(ctx *fasthttp.RequestCtx) 
 
 	locationIdString, ok := ctx.UserValue("location_id").(string)
 
-	if !govalidator.IsNumeric(locationIdString) || !ok{
+	if !govalidator.IsNumeric(locationIdString) || !ok {
 		ctx.SetStatusCode(fasthttp.StatusNotFound)
 		ctx.Response.Header.SetContentType("text/plain; charset=utf8")
 		ctx.Response.Header.SetConnectionClose()
@@ -78,7 +79,7 @@ func (locationApiHandler *LocationApiHandler) GetAverageMark(ctx *fasthttp.Reque
 
 	locationIdString, ok := ctx.UserValue("location_id").(string)
 
-	if !govalidator.IsNumeric(locationIdString) || !ok{
+	if !govalidator.IsNumeric(locationIdString) || !ok {
 		ctx.SetStatusCode(fasthttp.StatusNotFound)
 		ctx.Response.Header.SetContentType("text/plain; charset=utf8")
 		ctx.Response.Header.SetConnectionClose()
@@ -221,35 +222,35 @@ func (locationApiHandler *LocationApiHandler) GetAverageMark(ctx *fasthttp.Reque
 
 	for _, visitId := range visitsIds {
 
-		visitBytes := locationApiHandler.storage.GetVisitId(visitId)
+		visitBytes := locationApiHandler.storage.GetVisitById(visitId)
 
 		visit := new(entities.Visit)
 
-		err := json.Unmarshal(visitBytes, visit)
+		err := jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(visitBytes, visit)
 
 		if err != nil {
 			locationApiHandler.errLogger.Fatalln(err)
 		}
 
-		userBytes := locationApiHandler.storage.GetUserById(visit.User)
+		userBytes := locationApiHandler.storage.GetUserById(*visit.User)
 
 		user := new(entities.User)
 
-		err = json.Unmarshal(userBytes, user)
+		err = jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(userBytes, user)
 
 		if err != nil {
 			locationApiHandler.errLogger.Fatalln(err)
 		}
 
-		if !filter.CheckFromAge(user.BirthDate) ||
-			!filter.CheckToAge(user.BirthDate) ||
-			!filter.CheckToDate(visit.VisitedAt) ||
-			!filter.CheckFromDate(visit.VisitedAt) ||
-			!filter.CheckGender(user.Gender) {
+		if !filter.CheckFromAge(*user.BirthDate) ||
+			!filter.CheckToAge(*user.BirthDate) ||
+			!filter.CheckToDate(*visit.VisitedAt) ||
+			!filter.CheckFromDate(*visit.VisitedAt) ||
+			!filter.CheckGender(*user.Gender) {
 			continue
 		}
 
-		sumOfMarks += visit.Mark
+		sumOfMarks += *visit.Mark
 		visitCollection.Visits = append(visitCollection.Visits, visit)
 	}
 
@@ -259,7 +260,7 @@ func (locationApiHandler *LocationApiHandler) GetAverageMark(ctx *fasthttp.Reque
 		locationAvgMark.Avg = math.Round(float64(sumOfMarks)/float64(len(visitCollection.Visits))*100000) / 100000
 	}
 
-	locationAvgMarkBytes, err := json.Marshal(locationAvgMark)
+	locationAvgMarkBytes, err := jsoniter.ConfigCompatibleWithStandardLibrary.Marshal(locationAvgMark)
 
 	if err != nil {
 		locationApiHandler.errLogger.Fatalln(err)
@@ -270,4 +271,256 @@ func (locationApiHandler *LocationApiHandler) GetAverageMark(ctx *fasthttp.Reque
 	ctx.Response.Header.SetConnectionClose()
 	ctx.Response.Header.SetContentLength(len(locationAvgMarkBytes))
 	ctx.Write(locationAvgMarkBytes)
+}
+
+func (locationApiHandler *LocationApiHandler) CreateOrUpdate(ctx *fasthttp.RequestCtx) {
+
+	if strings.Contains(ctx.URI().String(), "/locations/new") {
+		locationApiHandler.Create(ctx)
+		return
+	}
+
+	locationIdString, ok := ctx.UserValue("location_id").(string)
+
+	if !govalidator.IsNumeric(locationIdString) || !ok {
+		ctx.SetStatusCode(fasthttp.StatusNotFound)
+		ctx.Response.Header.SetContentType("text/plain; charset=utf8")
+		ctx.Response.Header.SetConnectionClose()
+		ctx.Response.Header.SetContentLength(len("Not Found"))
+		ctx.WriteString("Not Found")
+		return
+	}
+
+	locationId, err := strconv.Atoi(locationIdString)
+
+	if err != nil {
+		locationApiHandler.errLogger.Fatalln(err)
+	}
+
+	locationBytes := locationApiHandler.storage.GetLocationById(uint(locationId))
+
+	if locationBytes == nil {
+		ctx.SetStatusCode(fasthttp.StatusNotFound)
+		ctx.Response.Header.SetContentType("text/plain; charset=utf8")
+		ctx.Response.Header.SetConnectionClose()
+		ctx.Response.Header.SetContentLength(len("Not Found"))
+		ctx.WriteString("Not Found")
+		return
+	}
+
+	newLocationMap := make(map[string]interface{})
+
+	err = jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(ctx.PostBody(), &newLocationMap)
+
+	if err != nil {
+		ctx.SetStatusCode(fasthttp.StatusBadRequest)
+		ctx.Response.Header.SetContentType("text/plain; charset=utf8")
+		ctx.Response.Header.SetConnectionClose()
+		ctx.Response.Header.SetContentLength(len("Bad Request"))
+		ctx.WriteString("Bad Request")
+		return
+	}
+
+	location := new(entities.Location)
+
+	err = jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(locationBytes, location)
+
+	if err != nil {
+		locationApiHandler.errLogger.Fatalln(err)
+	}
+
+	if value, ok := newLocationMap["place"]; ok {
+
+		place, typeOk := value.(string)
+
+		if value == nil || !typeOk {
+			ctx.SetStatusCode(fasthttp.StatusBadRequest)
+			ctx.Response.Header.SetContentType("text/plain; charset=utf8")
+			ctx.Response.Header.SetConnectionClose()
+			ctx.Response.Header.SetContentLength(len("Bad Request"))
+			ctx.WriteString("Bad Request")
+			return
+		}
+
+		location.Place = &place
+	}
+
+	if value, ok := newLocationMap["country"]; ok {
+
+		country, typeOk := value.(string)
+
+		if value == nil || !typeOk || len(country) > 50 {
+			ctx.SetStatusCode(fasthttp.StatusBadRequest)
+			ctx.Response.Header.SetContentType("text/plain; charset=utf8")
+			ctx.Response.Header.SetConnectionClose()
+			ctx.Response.Header.SetContentLength(len("Bad Request"))
+			ctx.WriteString("Bad Request")
+			return
+		}
+
+		location.Country = &country
+	}
+
+	if value, ok := newLocationMap["city"]; ok {
+
+		city, typeOk := value.(string)
+
+		if value == nil || !typeOk || len(city) > 50 {
+			ctx.SetStatusCode(fasthttp.StatusBadRequest)
+			ctx.Response.Header.SetContentType("text/plain; charset=utf8")
+			ctx.Response.Header.SetConnectionClose()
+			ctx.Response.Header.SetContentLength(len("Bad Request"))
+			ctx.WriteString("Bad Request")
+			return
+		}
+
+		location.City = &city
+	}
+
+	if value, ok := newLocationMap["distance"]; ok {
+
+		distance, typeOk := value.(float64)
+
+		if value == nil || !typeOk || distance <= 0 {
+			ctx.SetStatusCode(fasthttp.StatusBadRequest)
+			ctx.Response.Header.SetContentType("text/plain; charset=utf8")
+			ctx.Response.Header.SetConnectionClose()
+			ctx.Response.Header.SetContentLength(len("Bad Request"))
+			ctx.WriteString("Bad Request")
+			return
+		}
+
+		distanceAsUint := uint(distance)
+
+		location.Distance = &distanceAsUint
+	}
+
+	locationApiHandler.storage.AddLocation(location)
+
+	ctx.SetStatusCode(fasthttp.StatusOK)
+	ctx.Response.Header.SetContentType("application/json")
+	ctx.Response.Header.SetConnectionClose()
+	ctx.Response.Header.SetContentLength(len([]byte("{}")))
+	ctx.Write([]byte("{}"))
+}
+
+func (locationApiHandler *LocationApiHandler) Create(ctx *fasthttp.RequestCtx) {
+
+	newLocationMap := make(map[string]interface{})
+
+	err := jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(ctx.PostBody(), &newLocationMap)
+
+	if err != nil {
+		locationApiHandler.returnBadRequest(ctx)
+		return
+	}
+
+	locationIdInterface, ok := newLocationMap["id"]
+
+	if !ok {
+		locationApiHandler.returnBadRequest(ctx)
+		return
+	}
+
+	locationIdFloat, typeOk := locationIdInterface.(float64)
+
+	if !typeOk {
+		locationApiHandler.returnBadRequest(ctx)
+		return
+	}
+
+	locationIdUint := uint(locationIdFloat)
+
+	locationBytes := locationApiHandler.storage.GetLocationById(locationIdUint)
+
+	if locationBytes != nil {
+		locationApiHandler.returnBadRequest(ctx)
+		return
+	}
+
+	placeInterface, ok := newLocationMap["place"]
+
+	if !ok {
+		locationApiHandler.returnBadRequest(ctx)
+		return
+	}
+
+	countryInterface, ok := newLocationMap["country"]
+
+	if !ok {
+		locationApiHandler.returnBadRequest(ctx)
+		return
+	}
+
+	cityInterface, ok := newLocationMap["city"]
+
+	if !ok {
+		locationApiHandler.returnBadRequest(ctx)
+		return
+	}
+
+	distanceInterface, ok := newLocationMap["distance"]
+
+	if !ok {
+		locationApiHandler.returnBadRequest(ctx)
+		return
+	}
+
+	location := new(entities.Location)
+
+	location.Id = &locationIdUint
+
+	place, typeOk := placeInterface.(string)
+
+	if !typeOk {
+		locationApiHandler.returnBadRequest(ctx)
+		return
+	}
+
+	location.Place = &place
+
+	country, typeOk := countryInterface.(string)
+
+	if !typeOk || len(country) > 50 {
+		locationApiHandler.returnBadRequest(ctx)
+		return
+	}
+
+	location.Country = &country
+
+	city, typeOk := cityInterface.(string)
+
+	if !typeOk || len(city) > 50 {
+		locationApiHandler.returnBadRequest(ctx)
+		return
+	}
+
+	location.City = &city
+
+	distanceFloat, typeOk := distanceInterface.(float64)
+
+	if !typeOk || distanceFloat <= 0 {
+		locationApiHandler.returnBadRequest(ctx)
+		return
+	}
+
+	distance := uint(distanceFloat)
+
+	location.Distance = &distance
+
+	locationApiHandler.storage.AddLocation(location)
+
+	ctx.SetStatusCode(fasthttp.StatusOK)
+	ctx.Response.Header.SetContentType("application/json")
+	ctx.Response.Header.SetConnectionClose()
+	ctx.Response.Header.SetContentLength(len([]byte("{}")))
+	ctx.Write([]byte("{}"))
+}
+
+func (locationApiHandler *LocationApiHandler) returnBadRequest(ctx *fasthttp.RequestCtx) {
+	ctx.SetStatusCode(fasthttp.StatusBadRequest)
+	ctx.Response.Header.SetContentType("text/plain; charset=utf8")
+	ctx.Response.Header.SetConnectionClose()
+	ctx.Response.Header.SetContentLength(len("Bad Request"))
+	ctx.WriteString("Bad Request")
 }

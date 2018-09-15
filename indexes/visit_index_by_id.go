@@ -1,9 +1,9 @@
 package indexes
 
 import (
-	"encoding/json"
-	"hlcup/entities"
+		"hlcup/entities"
 	"sync"
+	"github.com/json-iterator/go"
 )
 
 type VisitIndexById struct {
@@ -17,7 +17,7 @@ func NewVisitIndexById() *VisitIndexById {
 
 func (visitIndexById *VisitIndexById) AddVisit(visit *entities.Visit) error {
 
-	encodedVisit, err := json.Marshal(visit)
+	encodedVisit, err := jsoniter.ConfigCompatibleWithStandardLibrary.Marshal(visit)
 
 	if err != nil {
 		return err
@@ -25,7 +25,7 @@ func (visitIndexById *VisitIndexById) AddVisit(visit *entities.Visit) error {
 
 	visitIndexById.mutex.Lock()
 
-	visitIndexById.visits[visit.Id] = encodedVisit
+	visitIndexById.visits[*visit.Id] = encodedVisit
 
 	visitIndexById.mutex.Unlock()
 

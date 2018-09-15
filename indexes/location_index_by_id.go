@@ -1,9 +1,9 @@
 package indexes
 
 import (
-	"encoding/json"
-	"hlcup/entities"
+		"hlcup/entities"
 	"sync"
+	"github.com/json-iterator/go"
 )
 
 type LocationIndexById struct {
@@ -17,7 +17,7 @@ func NewLocationIndexById() *LocationIndexById {
 
 func (locationIndexById *LocationIndexById) AddLocation(location *entities.Location) error {
 
-	encodedLocation, err := json.Marshal(location)
+	encodedLocation, err := jsoniter.ConfigCompatibleWithStandardLibrary.Marshal(location)
 
 	if err != nil {
 		return err
@@ -25,7 +25,7 @@ func (locationIndexById *LocationIndexById) AddLocation(location *entities.Locat
 
 	locationIndexById.mutex.Lock()
 
-	locationIndexById.locations[location.Id] = encodedLocation
+	locationIndexById.locations[*location.Id] = encodedLocation
 
 	locationIndexById.mutex.Unlock()
 
