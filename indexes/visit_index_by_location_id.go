@@ -3,8 +3,7 @@ package indexes
 import (
 	"hlcup/entities"
 	"sync"
-	"sort"
-)
+	)
 
 type VisitIndexByLocationId struct {
 	visits map[uint][]uint
@@ -20,10 +19,6 @@ func (visitIndexByLocationId *VisitIndexByLocationId) AddVisit(visit *entities.V
 	visitIndexByLocationId.mutex.Lock()
 
 	visitIndexByLocationId.visits[*visit.Location] = append(visitIndexByLocationId.visits[*visit.Location], *visit.Id)
-
-	sort.Slice(visitIndexByLocationId.visits[*visit.Location], func(i, j int) bool {
-		return visitIndexByLocationId.visits[*visit.Location][i] < visitIndexByLocationId.visits[*visit.Location][j]
-	})
 
 	visitIndexByLocationId.mutex.Unlock()
 }
@@ -50,20 +45,12 @@ func (visitIndexByLocationId *VisitIndexByLocationId) DeleteVisit(locationId uin
 		return
 	}
 
-	if len(visitsByLocationId) == 1 {
-		delete(visitIndexByLocationId.visits, locationId)
-		visitIndexByLocationId.mutex.Unlock()
-		return
-	}
+	for visitIndex, visitValue := range visitsByLocationId {
 
-	visitIndex := sort.Search(len(visitsByLocationId) - 1, func(index int) bool {
-		return visitsByLocationId[index] >= visitId
-	})
-
-	if visitIndex == len(visitsByLocationId)-1 {
-		visitIndexByLocationId.visits[locationId] = visitsByLocationId[:visitIndex]
-	} else {
-		visitIndexByLocationId.visits[locationId] = append(visitsByLocationId[:visitIndex], visitsByLocationId[visitIndex+1:]...)
+		if visitValue == visitId {
+			visitIndexByLocationId.visits[locationId] = append(visitsByLocationId[:visitIndex], visitsByLocationId[visitIndex+1:]...)
+			break
+		}
 	}
 
 	visitIndexByLocationId.mutex.Unlock()

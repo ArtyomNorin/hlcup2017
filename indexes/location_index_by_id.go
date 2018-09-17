@@ -1,7 +1,7 @@
 package indexes
 
 import (
-		"hlcup/entities"
+	"hlcup/entities"
 	"sync"
 	"github.com/json-iterator/go"
 )

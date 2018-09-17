@@ -17,6 +17,8 @@ type VisitApiHandler struct {
 	infoLogger *log.Logger
 }
 
+var oldLocationId, oldUserId uint
+
 func NewVisitApiHandler(storage *services.Storage, errLogger *log.Logger, infoLogger *log.Logger) *VisitApiHandler {
 
 	return &VisitApiHandler{storage: storage, errLogger: errLogger, infoLogger: infoLogger}
@@ -129,9 +131,8 @@ func (visitApiHandler *VisitApiHandler) CreateOrUpdate(ctx *fasthttp.RequestCtx)
 
 		locationIdAsUint := uint(locationId)
 
-		visitApiHandler.storage.DeleteVisitFromLocation(*visit.Location, *visit.Id)
+		oldLocationId = *visit.Location
 		visit.Location = &locationIdAsUint
-		visitApiHandler.storage.AddVisitByLocationId(visit)
 	}
 
 	if value, ok := newVisitMap["user"]; ok {
@@ -149,9 +150,8 @@ func (visitApiHandler *VisitApiHandler) CreateOrUpdate(ctx *fasthttp.RequestCtx)
 
 		userIdAsUint := uint(userId)
 
-		visitApiHandler.storage.DeleteVisitFromUser(*visit.User, *visit.Id)
+		oldUserId = *visit.User
 		visit.User = &userIdAsUint
-		visitApiHandler.storage.AddVisitByUserId(visit)
 	}
 
 	if value, ok := newVisitMap["visited_at"]; ok {
@@ -188,6 +188,16 @@ func (visitApiHandler *VisitApiHandler) CreateOrUpdate(ctx *fasthttp.RequestCtx)
 		markAsInt := int(mark)
 
 		visit.Mark = &markAsInt
+	}
+
+	if _, ok := newVisitMap["location"]; ok {
+		visitApiHandler.storage.DeleteVisitFromLocation(oldLocationId, *visit.Id)
+		visitApiHandler.storage.AddVisitByLocationId(visit)
+	}
+
+	if _, ok := newVisitMap["user"]; ok {
+		visitApiHandler.storage.DeleteVisitFromUser(oldUserId, *visit.Id)
+		visitApiHandler.storage.AddVisitByUserId(visit)
 	}
 
 	visitApiHandler.storage.AddVisit(visit)
