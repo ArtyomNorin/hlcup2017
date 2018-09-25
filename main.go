@@ -11,9 +11,14 @@ import (
 	"github.com/buaazp/fasthttprouter"
 	"hlcup/handlers"
 	"github.com/valyala/fasthttp"
+	"github.com/paulbellamy/ratecounter"
 )
 
 func main() {
+
+	runtime.GOMAXPROCS(runtime.NumCPU())
+
+	counter := ratecounter.NewRateCounter(5 * time.Second)
 
 	errorLogger := log.New(os.Stderr, "ERROR: ", log.Ldate|log.Ltime|log.Llongfile)
 	infoLogger := log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime)
@@ -24,7 +29,7 @@ func main() {
 
 	startTime := time.Now()
 
-	storage.Init("/tmp/data/data.zip", 4, waitGroup)
+	storage.Init("/home/artyomnorin/projects/go/src/hlcup/data/full/data.zip", 4, waitGroup)
 
 	waitGroup.Wait()
 
@@ -34,9 +39,9 @@ func main() {
 	runtime.GC()
 	PrintMemUsage()
 
-	userApiHandler := handlers.NewUserApiHandler(storage, errorLogger, infoLogger, "/tmp/data/options.txt")
-	locationApiHandler := handlers.NewLocationApiHandler(storage, errorLogger, infoLogger, "/tmp/data/options.txt")
-	visitApiHandler := handlers.NewVisitApiHandler(storage, errorLogger, infoLogger)
+	userApiHandler := handlers.NewUserApiHandler(storage, errorLogger, infoLogger, counter, "/home/artyomnorin/projects/go/src/hlcup/data/full/options.txt")
+	locationApiHandler := handlers.NewLocationApiHandler(storage, errorLogger, infoLogger, counter,  "/home/artyomnorin/projects/go/src/hlcup/data/full/options.txt")
+	visitApiHandler := handlers.NewVisitApiHandler(storage, errorLogger, infoLogger, counter)
 
 	router := fasthttprouter.New()
 
@@ -51,8 +56,15 @@ func main() {
 	router.POST("/locations/:location_id", locationApiHandler.CreateOrUpdate)
 	router.POST("/visits/:visit_id", visitApiHandler.CreateOrUpdate)
 
+	go func() {
+		for {
+			infoLogger.Println(fmt.Sprintf("RPS: %d", counter.Rate()))
+			time.Sleep(5 * time.Second)
+		}
+	}()
+
 	infoLogger.Println("Server is listening...")
-	err := fasthttp.ListenAndServe(":80", router.Handler)
+	err := fasthttp.ListenAndServe(":8080", router.Handler)
 
 	if err != nil {
 		errorLogger.Fatalln(err)

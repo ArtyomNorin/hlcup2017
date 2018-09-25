@@ -17,7 +17,7 @@ func NewVisitIndexById() *VisitIndexById {
 
 func (visitIndexById *VisitIndexById) AddVisit(visit *entities.Visit) error {
 
-	encodedVisit, err := jsoniter.ConfigCompatibleWithStandardLibrary.Marshal(visit)
+	encodedVisit, err := jsoniter.ConfigFastest.Marshal(visit)
 
 	if err != nil {
 		return err

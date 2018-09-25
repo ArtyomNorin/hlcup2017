@@ -17,7 +17,7 @@ func NewUserIndexById() *UserIndexById {
 
 func (userIndexById *UserIndexById) AddUser(user *entities.User) error {
 
-	encodedUser, err := jsoniter.ConfigCompatibleWithStandardLibrary.Marshal(user)
+	encodedUser, err := jsoniter.ConfigFastest.Marshal(user)
 
 	if err != nil {
 		return err

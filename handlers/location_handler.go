@@ -13,6 +13,7 @@ import (
 	"math"
 	"github.com/json-iterator/go"
 	"strings"
+	"github.com/paulbellamy/ratecounter"
 )
 
 type LocationApiHandler struct {
@@ -20,9 +21,10 @@ type LocationApiHandler struct {
 	errLogger          *log.Logger
 	infoLogger         *log.Logger
 	timeDataGeneration time.Time
+	rateCounter        *ratecounter.RateCounter
 }
 
-func NewLocationApiHandler(storage *services.Storage, errLogger *log.Logger, infoLogger *log.Logger, pathToOptions string) *LocationApiHandler {
+func NewLocationApiHandler(storage *services.Storage, errLogger *log.Logger, infoLogger *log.Logger, rateCounter *ratecounter.RateCounter, pathToOptions string) *LocationApiHandler {
 
 	file, _ := os.Open(pathToOptions)
 
@@ -36,7 +38,7 @@ func NewLocationApiHandler(storage *services.Storage, errLogger *log.Logger, inf
 		errLogger.Fatalln(err)
 	}
 
-	return &LocationApiHandler{storage: storage, errLogger: errLogger, infoLogger: infoLogger, timeDataGeneration: time.Unix(int64(timeDataGeneration), 0)}
+	return &LocationApiHandler{storage: storage, errLogger: errLogger, infoLogger: infoLogger, timeDataGeneration: time.Unix(int64(timeDataGeneration), 0), rateCounter: rateCounter}
 }
 
 func (locationApiHandler *LocationApiHandler) GetById(ctx *fasthttp.RequestCtx) {
@@ -49,13 +51,20 @@ func (locationApiHandler *LocationApiHandler) GetById(ctx *fasthttp.RequestCtx) 
 		ctx.Response.Header.SetConnectionClose()
 		ctx.Response.Header.SetContentLength(len("Not Found"))
 		ctx.WriteString("Not Found")
+		locationApiHandler.rateCounter.Incr(1)
 		return
 	}
 
 	locationId, err := strconv.Atoi(locationIdString)
 
 	if err != nil {
-		locationApiHandler.errLogger.Fatalln(err)
+		ctx.SetStatusCode(fasthttp.StatusNotFound)
+		ctx.Response.Header.SetContentType("text/plain; charset=utf8")
+		ctx.Response.Header.SetConnectionClose()
+		ctx.Response.Header.SetContentLength(len("Not Found"))
+		ctx.WriteString("Not Found")
+		locationApiHandler.rateCounter.Incr(1)
+		return
 	}
 
 	location := locationApiHandler.storage.GetLocationById(uint(locationId))
@@ -66,12 +75,14 @@ func (locationApiHandler *LocationApiHandler) GetById(ctx *fasthttp.RequestCtx) 
 		ctx.Response.Header.SetConnectionClose()
 		ctx.Response.Header.SetContentLength(len("Not Found"))
 		ctx.WriteString("Not Found")
+		locationApiHandler.rateCounter.Incr(1)
 	} else {
 		ctx.SetStatusCode(fasthttp.StatusOK)
 		ctx.Response.Header.SetContentType("application/json")
 		ctx.Response.Header.SetConnectionClose()
 		ctx.Response.Header.SetContentLength(len(location))
 		ctx.Write(location)
+		locationApiHandler.rateCounter.Incr(1)
 	}
 }
 
@@ -85,13 +96,20 @@ func (locationApiHandler *LocationApiHandler) GetAverageMark(ctx *fasthttp.Reque
 		ctx.Response.Header.SetConnectionClose()
 		ctx.Response.Header.SetContentLength(len("Not Found"))
 		ctx.WriteString("Not Found")
+		locationApiHandler.rateCounter.Incr(1)
 		return
 	}
 
 	locationIdInt, err := strconv.Atoi(locationIdString)
 
 	if err != nil {
-		locationApiHandler.errLogger.Fatalln(err)
+		ctx.SetStatusCode(fasthttp.StatusNotFound)
+		ctx.Response.Header.SetContentType("text/plain; charset=utf8")
+		ctx.Response.Header.SetConnectionClose()
+		ctx.Response.Header.SetContentLength(len("Not Found"))
+		ctx.WriteString("Not Found")
+		locationApiHandler.rateCounter.Incr(1)
+		return
 	}
 
 	filter := services.InitVisitFilter(locationApiHandler.timeDataGeneration)
@@ -110,6 +128,7 @@ func (locationApiHandler *LocationApiHandler) GetAverageMark(ctx *fasthttp.Reque
 			ctx.Response.Header.SetConnectionClose()
 			ctx.Response.Header.SetContentLength(len("Bad Request"))
 			ctx.WriteString("Bad Request")
+			locationApiHandler.rateCounter.Incr(1)
 			return
 		}
 
@@ -132,6 +151,7 @@ func (locationApiHandler *LocationApiHandler) GetAverageMark(ctx *fasthttp.Reque
 			ctx.Response.Header.SetConnectionClose()
 			ctx.Response.Header.SetContentLength(len("Bad Request"))
 			ctx.WriteString("Bad Request")
+			locationApiHandler.rateCounter.Incr(1)
 			return
 		}
 
@@ -154,6 +174,7 @@ func (locationApiHandler *LocationApiHandler) GetAverageMark(ctx *fasthttp.Reque
 			ctx.Response.Header.SetConnectionClose()
 			ctx.Response.Header.SetContentLength(len("Bad Request"))
 			ctx.WriteString("Bad Request")
+			locationApiHandler.rateCounter.Incr(1)
 			return
 		}
 
@@ -176,6 +197,7 @@ func (locationApiHandler *LocationApiHandler) GetAverageMark(ctx *fasthttp.Reque
 			ctx.Response.Header.SetConnectionClose()
 			ctx.Response.Header.SetContentLength(len("Bad Request"))
 			ctx.WriteString("Bad Request")
+			locationApiHandler.rateCounter.Incr(1)
 			return
 		}
 
@@ -198,6 +220,7 @@ func (locationApiHandler *LocationApiHandler) GetAverageMark(ctx *fasthttp.Reque
 			ctx.Response.Header.SetConnectionClose()
 			ctx.Response.Header.SetContentLength(len("Bad Request"))
 			ctx.WriteString("Bad Request")
+			locationApiHandler.rateCounter.Incr(1)
 			return
 		}
 
@@ -212,6 +235,7 @@ func (locationApiHandler *LocationApiHandler) GetAverageMark(ctx *fasthttp.Reque
 		ctx.Response.Header.SetConnectionClose()
 		ctx.Response.Header.SetContentLength(len("Not Found"))
 		ctx.WriteString("Not Found")
+		locationApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -226,7 +250,7 @@ func (locationApiHandler *LocationApiHandler) GetAverageMark(ctx *fasthttp.Reque
 
 		visit := new(entities.Visit)
 
-		err := jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(visitBytes, visit)
+		err := jsoniter.ConfigFastest.Unmarshal(visitBytes, visit)
 
 		if err != nil {
 			locationApiHandler.errLogger.Fatalln(err)
@@ -236,7 +260,7 @@ func (locationApiHandler *LocationApiHandler) GetAverageMark(ctx *fasthttp.Reque
 
 		user := new(entities.User)
 
-		err = jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(userBytes, user)
+		err = jsoniter.ConfigFastest.Unmarshal(userBytes, user)
 
 		if err != nil {
 			locationApiHandler.errLogger.Fatalln(err)
@@ -260,7 +284,7 @@ func (locationApiHandler *LocationApiHandler) GetAverageMark(ctx *fasthttp.Reque
 		locationAvgMark.Avg = math.Round(float64(sumOfMarks)/float64(len(visitCollection.Visits))*100000) / 100000
 	}
 
-	locationAvgMarkBytes, err := jsoniter.ConfigCompatibleWithStandardLibrary.Marshal(locationAvgMark)
+	locationAvgMarkBytes, err := jsoniter.ConfigFastest.Marshal(locationAvgMark)
 
 	if err != nil {
 		locationApiHandler.errLogger.Fatalln(err)
@@ -271,6 +295,7 @@ func (locationApiHandler *LocationApiHandler) GetAverageMark(ctx *fasthttp.Reque
 	ctx.Response.Header.SetConnectionClose()
 	ctx.Response.Header.SetContentLength(len(locationAvgMarkBytes))
 	ctx.Write(locationAvgMarkBytes)
+	locationApiHandler.rateCounter.Incr(1)
 }
 
 func (locationApiHandler *LocationApiHandler) CreateOrUpdate(ctx *fasthttp.RequestCtx) {
@@ -288,13 +313,20 @@ func (locationApiHandler *LocationApiHandler) CreateOrUpdate(ctx *fasthttp.Reque
 		ctx.Response.Header.SetConnectionClose()
 		ctx.Response.Header.SetContentLength(len("Not Found"))
 		ctx.WriteString("Not Found")
+		locationApiHandler.rateCounter.Incr(1)
 		return
 	}
 
 	locationId, err := strconv.Atoi(locationIdString)
 
 	if err != nil {
-		locationApiHandler.errLogger.Fatalln(err)
+		ctx.SetStatusCode(fasthttp.StatusNotFound)
+		ctx.Response.Header.SetContentType("text/plain; charset=utf8")
+		ctx.Response.Header.SetConnectionClose()
+		ctx.Response.Header.SetContentLength(len("Not Found"))
+		ctx.WriteString("Not Found")
+		locationApiHandler.rateCounter.Incr(1)
+		return
 	}
 
 	locationBytes := locationApiHandler.storage.GetLocationById(uint(locationId))
@@ -305,12 +337,13 @@ func (locationApiHandler *LocationApiHandler) CreateOrUpdate(ctx *fasthttp.Reque
 		ctx.Response.Header.SetConnectionClose()
 		ctx.Response.Header.SetContentLength(len("Not Found"))
 		ctx.WriteString("Not Found")
+		locationApiHandler.rateCounter.Incr(1)
 		return
 	}
 
 	newLocationMap := make(map[string]interface{})
 
-	err = jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(ctx.PostBody(), &newLocationMap)
+	err = jsoniter.ConfigFastest.Unmarshal(ctx.PostBody(), &newLocationMap)
 
 	if err != nil {
 		ctx.SetStatusCode(fasthttp.StatusBadRequest)
@@ -318,12 +351,13 @@ func (locationApiHandler *LocationApiHandler) CreateOrUpdate(ctx *fasthttp.Reque
 		ctx.Response.Header.SetConnectionClose()
 		ctx.Response.Header.SetContentLength(len("Bad Request"))
 		ctx.WriteString("Bad Request")
+		locationApiHandler.rateCounter.Incr(1)
 		return
 	}
 
 	location := new(entities.Location)
 
-	err = jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(locationBytes, location)
+	err = jsoniter.ConfigFastest.Unmarshal(locationBytes, location)
 
 	if err != nil {
 		locationApiHandler.errLogger.Fatalln(err)
@@ -339,6 +373,7 @@ func (locationApiHandler *LocationApiHandler) CreateOrUpdate(ctx *fasthttp.Reque
 			ctx.Response.Header.SetConnectionClose()
 			ctx.Response.Header.SetContentLength(len("Bad Request"))
 			ctx.WriteString("Bad Request")
+			locationApiHandler.rateCounter.Incr(1)
 			return
 		}
 
@@ -355,6 +390,7 @@ func (locationApiHandler *LocationApiHandler) CreateOrUpdate(ctx *fasthttp.Reque
 			ctx.Response.Header.SetConnectionClose()
 			ctx.Response.Header.SetContentLength(len("Bad Request"))
 			ctx.WriteString("Bad Request")
+			locationApiHandler.rateCounter.Incr(1)
 			return
 		}
 
@@ -371,6 +407,7 @@ func (locationApiHandler *LocationApiHandler) CreateOrUpdate(ctx *fasthttp.Reque
 			ctx.Response.Header.SetConnectionClose()
 			ctx.Response.Header.SetContentLength(len("Bad Request"))
 			ctx.WriteString("Bad Request")
+			locationApiHandler.rateCounter.Incr(1)
 			return
 		}
 
@@ -387,6 +424,7 @@ func (locationApiHandler *LocationApiHandler) CreateOrUpdate(ctx *fasthttp.Reque
 			ctx.Response.Header.SetConnectionClose()
 			ctx.Response.Header.SetContentLength(len("Bad Request"))
 			ctx.WriteString("Bad Request")
+			locationApiHandler.rateCounter.Incr(1)
 			return
 		}
 
@@ -402,16 +440,18 @@ func (locationApiHandler *LocationApiHandler) CreateOrUpdate(ctx *fasthttp.Reque
 	ctx.Response.Header.SetConnectionClose()
 	ctx.Response.Header.SetContentLength(len([]byte("{}")))
 	ctx.Write([]byte("{}"))
+	locationApiHandler.rateCounter.Incr(1)
 }
 
 func (locationApiHandler *LocationApiHandler) Create(ctx *fasthttp.RequestCtx) {
 
 	newLocationMap := make(map[string]interface{})
 
-	err := jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(ctx.PostBody(), &newLocationMap)
+	err := jsoniter.ConfigFastest.Unmarshal(ctx.PostBody(), &newLocationMap)
 
 	if err != nil {
 		locationApiHandler.returnBadRequest(ctx)
+		locationApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -419,6 +459,7 @@ func (locationApiHandler *LocationApiHandler) Create(ctx *fasthttp.RequestCtx) {
 
 	if !ok {
 		locationApiHandler.returnBadRequest(ctx)
+		locationApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -426,6 +467,7 @@ func (locationApiHandler *LocationApiHandler) Create(ctx *fasthttp.RequestCtx) {
 
 	if !typeOk {
 		locationApiHandler.returnBadRequest(ctx)
+		locationApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -435,6 +477,7 @@ func (locationApiHandler *LocationApiHandler) Create(ctx *fasthttp.RequestCtx) {
 
 	if locationBytes != nil {
 		locationApiHandler.returnBadRequest(ctx)
+		locationApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -442,6 +485,7 @@ func (locationApiHandler *LocationApiHandler) Create(ctx *fasthttp.RequestCtx) {
 
 	if !ok {
 		locationApiHandler.returnBadRequest(ctx)
+		locationApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -449,6 +493,7 @@ func (locationApiHandler *LocationApiHandler) Create(ctx *fasthttp.RequestCtx) {
 
 	if !ok {
 		locationApiHandler.returnBadRequest(ctx)
+		locationApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -456,6 +501,7 @@ func (locationApiHandler *LocationApiHandler) Create(ctx *fasthttp.RequestCtx) {
 
 	if !ok {
 		locationApiHandler.returnBadRequest(ctx)
+		locationApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -463,6 +509,7 @@ func (locationApiHandler *LocationApiHandler) Create(ctx *fasthttp.RequestCtx) {
 
 	if !ok {
 		locationApiHandler.returnBadRequest(ctx)
+		locationApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -474,6 +521,7 @@ func (locationApiHandler *LocationApiHandler) Create(ctx *fasthttp.RequestCtx) {
 
 	if !typeOk {
 		locationApiHandler.returnBadRequest(ctx)
+		locationApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -483,6 +531,7 @@ func (locationApiHandler *LocationApiHandler) Create(ctx *fasthttp.RequestCtx) {
 
 	if !typeOk || len(country) > 50 {
 		locationApiHandler.returnBadRequest(ctx)
+		locationApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -492,6 +541,7 @@ func (locationApiHandler *LocationApiHandler) Create(ctx *fasthttp.RequestCtx) {
 
 	if !typeOk || len(city) > 50 {
 		locationApiHandler.returnBadRequest(ctx)
+		locationApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -501,6 +551,7 @@ func (locationApiHandler *LocationApiHandler) Create(ctx *fasthttp.RequestCtx) {
 
 	if !typeOk || distanceFloat <= 0 {
 		locationApiHandler.returnBadRequest(ctx)
+		locationApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -515,6 +566,7 @@ func (locationApiHandler *LocationApiHandler) Create(ctx *fasthttp.RequestCtx) {
 	ctx.Response.Header.SetConnectionClose()
 	ctx.Response.Header.SetContentLength(len([]byte("{}")))
 	ctx.Write([]byte("{}"))
+	locationApiHandler.rateCounter.Incr(1)
 }
 
 func (locationApiHandler *LocationApiHandler) returnBadRequest(ctx *fasthttp.RequestCtx) {

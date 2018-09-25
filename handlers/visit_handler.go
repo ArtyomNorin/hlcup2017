@@ -9,19 +9,21 @@ import (
 	"github.com/json-iterator/go"
 	"hlcup/entities"
 	"strings"
+	"github.com/paulbellamy/ratecounter"
 )
 
 type VisitApiHandler struct {
-	storage    *services.Storage
-	errLogger  *log.Logger
-	infoLogger *log.Logger
+	storage     *services.Storage
+	errLogger   *log.Logger
+	infoLogger  *log.Logger
+	rateCounter *ratecounter.RateCounter
 }
 
 var oldLocationId, oldUserId uint
 
-func NewVisitApiHandler(storage *services.Storage, errLogger *log.Logger, infoLogger *log.Logger) *VisitApiHandler {
+func NewVisitApiHandler(storage *services.Storage, errLogger *log.Logger, infoLogger *log.Logger, rateCounter *ratecounter.RateCounter) *VisitApiHandler {
 
-	return &VisitApiHandler{storage: storage, errLogger: errLogger, infoLogger: infoLogger}
+	return &VisitApiHandler{storage: storage, errLogger: errLogger, infoLogger: infoLogger, rateCounter: rateCounter}
 }
 
 func (visitApiHandler *VisitApiHandler) GetById(ctx *fasthttp.RequestCtx) {
@@ -34,13 +36,20 @@ func (visitApiHandler *VisitApiHandler) GetById(ctx *fasthttp.RequestCtx) {
 		ctx.Response.Header.SetConnectionClose()
 		ctx.Response.Header.SetContentLength(len("Not Found"))
 		ctx.WriteString("Not Found")
+		visitApiHandler.rateCounter.Incr(1)
 		return
 	}
 
 	visitId, err := strconv.Atoi(visitIdString)
 
 	if err != nil {
-		visitApiHandler.errLogger.Fatalln(err)
+		ctx.SetStatusCode(fasthttp.StatusNotFound)
+		ctx.Response.Header.SetContentType("text/plain; charset=utf8")
+		ctx.Response.Header.SetConnectionClose()
+		ctx.Response.Header.SetContentLength(len("Not Found"))
+		ctx.WriteString("Not Found")
+		visitApiHandler.rateCounter.Incr(1)
+		return
 	}
 
 	visit := visitApiHandler.storage.GetVisitById(uint(visitId))
@@ -51,12 +60,14 @@ func (visitApiHandler *VisitApiHandler) GetById(ctx *fasthttp.RequestCtx) {
 		ctx.Response.Header.SetConnectionClose()
 		ctx.Response.Header.SetContentLength(len("Not Found"))
 		ctx.WriteString("Not Found")
+		visitApiHandler.rateCounter.Incr(1)
 	} else {
 		ctx.SetStatusCode(fasthttp.StatusOK)
 		ctx.Response.Header.SetContentType("application/json")
 		ctx.Response.Header.SetConnectionClose()
 		ctx.Response.Header.SetContentLength(len(visit))
 		ctx.Write(visit)
+		visitApiHandler.rateCounter.Incr(1)
 	}
 }
 
@@ -75,13 +86,20 @@ func (visitApiHandler *VisitApiHandler) CreateOrUpdate(ctx *fasthttp.RequestCtx)
 		ctx.Response.Header.SetConnectionClose()
 		ctx.Response.Header.SetContentLength(len("Not Found"))
 		ctx.WriteString("Not Found")
+		visitApiHandler.rateCounter.Incr(1)
 		return
 	}
 
 	visitId, err := strconv.Atoi(visitIdString)
 
 	if err != nil {
-		visitApiHandler.errLogger.Fatalln(err)
+		ctx.SetStatusCode(fasthttp.StatusNotFound)
+		ctx.Response.Header.SetContentType("text/plain; charset=utf8")
+		ctx.Response.Header.SetConnectionClose()
+		ctx.Response.Header.SetContentLength(len("Not Found"))
+		ctx.WriteString("Not Found")
+		visitApiHandler.rateCounter.Incr(1)
+		return
 	}
 
 	visitBytes := visitApiHandler.storage.GetVisitById(uint(visitId))
@@ -92,12 +110,13 @@ func (visitApiHandler *VisitApiHandler) CreateOrUpdate(ctx *fasthttp.RequestCtx)
 		ctx.Response.Header.SetConnectionClose()
 		ctx.Response.Header.SetContentLength(len("Not Found"))
 		ctx.WriteString("Not Found")
+		visitApiHandler.rateCounter.Incr(1)
 		return
 	}
 
 	newVisitMap := make(map[string]interface{})
 
-	err = jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(ctx.PostBody(), &newVisitMap)
+	err = jsoniter.ConfigFastest.Unmarshal(ctx.PostBody(), &newVisitMap)
 
 	if err != nil {
 		ctx.SetStatusCode(fasthttp.StatusBadRequest)
@@ -105,12 +124,13 @@ func (visitApiHandler *VisitApiHandler) CreateOrUpdate(ctx *fasthttp.RequestCtx)
 		ctx.Response.Header.SetConnectionClose()
 		ctx.Response.Header.SetContentLength(len("Bad Request"))
 		ctx.WriteString("Bad Request")
+		visitApiHandler.rateCounter.Incr(1)
 		return
 	}
 
 	visit := new(entities.Visit)
 
-	err = jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(visitBytes, visit)
+	err = jsoniter.ConfigFastest.Unmarshal(visitBytes, visit)
 
 	if err != nil {
 		visitApiHandler.errLogger.Fatalln(err)
@@ -126,6 +146,7 @@ func (visitApiHandler *VisitApiHandler) CreateOrUpdate(ctx *fasthttp.RequestCtx)
 			ctx.Response.Header.SetConnectionClose()
 			ctx.Response.Header.SetContentLength(len("Bad Request"))
 			ctx.WriteString("Bad Request")
+			visitApiHandler.rateCounter.Incr(1)
 			return
 		}
 
@@ -145,6 +166,7 @@ func (visitApiHandler *VisitApiHandler) CreateOrUpdate(ctx *fasthttp.RequestCtx)
 			ctx.Response.Header.SetConnectionClose()
 			ctx.Response.Header.SetContentLength(len("Bad Request"))
 			ctx.WriteString("Bad Request")
+			visitApiHandler.rateCounter.Incr(1)
 			return
 		}
 
@@ -164,6 +186,7 @@ func (visitApiHandler *VisitApiHandler) CreateOrUpdate(ctx *fasthttp.RequestCtx)
 			ctx.Response.Header.SetConnectionClose()
 			ctx.Response.Header.SetContentLength(len("Bad Request"))
 			ctx.WriteString("Bad Request")
+			visitApiHandler.rateCounter.Incr(1)
 			return
 		}
 
@@ -182,6 +205,7 @@ func (visitApiHandler *VisitApiHandler) CreateOrUpdate(ctx *fasthttp.RequestCtx)
 			ctx.Response.Header.SetConnectionClose()
 			ctx.Response.Header.SetContentLength(len("Bad Request"))
 			ctx.WriteString("Bad Request")
+			visitApiHandler.rateCounter.Incr(1)
 			return
 		}
 
@@ -207,16 +231,18 @@ func (visitApiHandler *VisitApiHandler) CreateOrUpdate(ctx *fasthttp.RequestCtx)
 	ctx.Response.Header.SetConnectionClose()
 	ctx.Response.Header.SetContentLength(len([]byte("{}")))
 	ctx.Write([]byte("{}"))
+	visitApiHandler.rateCounter.Incr(1)
 }
 
 func (visitApiHandler *VisitApiHandler) Create(ctx *fasthttp.RequestCtx) {
 
 	newVisitMap := make(map[string]interface{})
 
-	err := jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(ctx.PostBody(), &newVisitMap)
+	err := jsoniter.ConfigFastest.Unmarshal(ctx.PostBody(), &newVisitMap)
 
 	if err != nil {
 		visitApiHandler.returnBadRequest(ctx)
+		visitApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -224,6 +250,7 @@ func (visitApiHandler *VisitApiHandler) Create(ctx *fasthttp.RequestCtx) {
 
 	if !ok {
 		visitApiHandler.returnBadRequest(ctx)
+		visitApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -231,6 +258,7 @@ func (visitApiHandler *VisitApiHandler) Create(ctx *fasthttp.RequestCtx) {
 
 	if !typeOk {
 		visitApiHandler.returnBadRequest(ctx)
+		visitApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -240,6 +268,7 @@ func (visitApiHandler *VisitApiHandler) Create(ctx *fasthttp.RequestCtx) {
 
 	if visitBytes != nil {
 		visitApiHandler.returnBadRequest(ctx)
+		visitApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -247,6 +276,7 @@ func (visitApiHandler *VisitApiHandler) Create(ctx *fasthttp.RequestCtx) {
 
 	if !ok {
 		visitApiHandler.returnBadRequest(ctx)
+		visitApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -254,6 +284,7 @@ func (visitApiHandler *VisitApiHandler) Create(ctx *fasthttp.RequestCtx) {
 
 	if !ok {
 		visitApiHandler.returnBadRequest(ctx)
+		visitApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -261,6 +292,7 @@ func (visitApiHandler *VisitApiHandler) Create(ctx *fasthttp.RequestCtx) {
 
 	if !ok {
 		visitApiHandler.returnBadRequest(ctx)
+		visitApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -268,6 +300,7 @@ func (visitApiHandler *VisitApiHandler) Create(ctx *fasthttp.RequestCtx) {
 
 	if !ok {
 		visitApiHandler.returnBadRequest(ctx)
+		visitApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -279,6 +312,7 @@ func (visitApiHandler *VisitApiHandler) Create(ctx *fasthttp.RequestCtx) {
 
 	if !typeOk || locationIdFloat <= 0 {
 		visitApiHandler.returnBadRequest(ctx)
+		visitApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -288,6 +322,7 @@ func (visitApiHandler *VisitApiHandler) Create(ctx *fasthttp.RequestCtx) {
 
 	if location == nil {
 		visitApiHandler.returnBadRequest(ctx)
+		visitApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -297,6 +332,7 @@ func (visitApiHandler *VisitApiHandler) Create(ctx *fasthttp.RequestCtx) {
 
 	if !typeOk || userIdFloat <= 0 {
 		visitApiHandler.returnBadRequest(ctx)
+		visitApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -306,6 +342,7 @@ func (visitApiHandler *VisitApiHandler) Create(ctx *fasthttp.RequestCtx) {
 
 	if user == nil {
 		visitApiHandler.returnBadRequest(ctx)
+		visitApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -315,6 +352,7 @@ func (visitApiHandler *VisitApiHandler) Create(ctx *fasthttp.RequestCtx) {
 
 	if !typeOk {
 		visitApiHandler.returnBadRequest(ctx)
+		visitApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -326,6 +364,7 @@ func (visitApiHandler *VisitApiHandler) Create(ctx *fasthttp.RequestCtx) {
 
 	if !typeOk || (markFloat != 0 && markFloat != 1 && markFloat != 2 && markFloat != 3 && markFloat != 4 && markFloat != 5) {
 		visitApiHandler.returnBadRequest(ctx)
+		visitApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -342,6 +381,7 @@ func (visitApiHandler *VisitApiHandler) Create(ctx *fasthttp.RequestCtx) {
 	ctx.Response.Header.SetConnectionClose()
 	ctx.Response.Header.SetContentLength(len([]byte("{}")))
 	ctx.Write([]byte("{}"))
+	visitApiHandler.rateCounter.Incr(1)
 }
 
 func (visitApiHandler *VisitApiHandler) returnBadRequest(ctx *fasthttp.RequestCtx) {

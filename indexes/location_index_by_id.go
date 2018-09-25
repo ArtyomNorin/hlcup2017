@@ -17,7 +17,7 @@ func NewLocationIndexById() *LocationIndexById {
 
 func (locationIndexById *LocationIndexById) AddLocation(location *entities.Location) error {
 
-	encodedLocation, err := jsoniter.ConfigCompatibleWithStandardLibrary.Marshal(location)
+	encodedLocation, err := jsoniter.ConfigFastest.Marshal(location)
 
 	if err != nil {
 		return err

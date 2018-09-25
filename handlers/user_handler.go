@@ -13,6 +13,7 @@ import (
 	"strings"
 	"github.com/json-iterator/go"
 	"hlcup/entities"
+	"github.com/paulbellamy/ratecounter"
 )
 
 type UserApiHandler struct {
@@ -20,9 +21,10 @@ type UserApiHandler struct {
 	errLogger          *log.Logger
 	infoLogger         *log.Logger
 	timeDataGeneration time.Time
+	rateCounter        *ratecounter.RateCounter
 }
 
-func NewUserApiHandler(storage *services.Storage, errLogger *log.Logger, infoLogger *log.Logger, pathToOptions string) *UserApiHandler {
+func NewUserApiHandler(storage *services.Storage, errLogger *log.Logger, infoLogger *log.Logger, rateCounter *ratecounter.RateCounter, pathToOptions string) *UserApiHandler {
 
 	file, _ := os.Open(pathToOptions)
 
@@ -36,7 +38,7 @@ func NewUserApiHandler(storage *services.Storage, errLogger *log.Logger, infoLog
 		errLogger.Fatalln(err)
 	}
 
-	return &UserApiHandler{storage: storage, errLogger: errLogger, infoLogger: infoLogger, timeDataGeneration: time.Unix(int64(timeDataGeneration), 0)}
+	return &UserApiHandler{storage: storage, errLogger: errLogger, infoLogger: infoLogger, rateCounter: rateCounter, timeDataGeneration: time.Unix(int64(timeDataGeneration), 0)}
 }
 
 func (userApiHandler *UserApiHandler) GetById(ctx *fasthttp.RequestCtx) {
@@ -49,6 +51,7 @@ func (userApiHandler *UserApiHandler) GetById(ctx *fasthttp.RequestCtx) {
 		ctx.Response.Header.SetConnectionClose()
 		ctx.Response.Header.SetContentLength(len("Not Found"))
 		ctx.WriteString("Not Found")
+		userApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -60,6 +63,7 @@ func (userApiHandler *UserApiHandler) GetById(ctx *fasthttp.RequestCtx) {
 		ctx.Response.Header.SetConnectionClose()
 		ctx.Response.Header.SetContentLength(len("Not Found"))
 		ctx.WriteString("Not Found")
+		userApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -69,6 +73,7 @@ func (userApiHandler *UserApiHandler) GetById(ctx *fasthttp.RequestCtx) {
 		ctx.Response.Header.SetConnectionClose()
 		ctx.Response.Header.SetContentLength(len("Not Found"))
 		ctx.WriteString("Not Found")
+		userApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -80,12 +85,14 @@ func (userApiHandler *UserApiHandler) GetById(ctx *fasthttp.RequestCtx) {
 		ctx.Response.Header.SetConnectionClose()
 		ctx.Response.Header.SetContentLength(len("Not Found"))
 		ctx.WriteString("Not Found")
+		userApiHandler.rateCounter.Incr(1)
 	} else {
 		ctx.SetStatusCode(fasthttp.StatusOK)
 		ctx.Response.Header.SetContentType("application/json")
 		ctx.Response.Header.SetConnectionClose()
 		ctx.Response.Header.SetContentLength(len(user))
 		ctx.Write(user)
+		userApiHandler.rateCounter.Incr(1)
 	}
 }
 
@@ -99,6 +106,7 @@ func (userApiHandler *UserApiHandler) GetVisitedPlaces(ctx *fasthttp.RequestCtx)
 		ctx.Response.Header.SetConnectionClose()
 		ctx.Response.Header.SetContentLength(len("Not Found"))
 		ctx.WriteString("Not Found")
+		userApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -110,6 +118,7 @@ func (userApiHandler *UserApiHandler) GetVisitedPlaces(ctx *fasthttp.RequestCtx)
 		ctx.Response.Header.SetConnectionClose()
 		ctx.Response.Header.SetContentLength(len("Not Found"))
 		ctx.WriteString("Not Found")
+		userApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -119,6 +128,7 @@ func (userApiHandler *UserApiHandler) GetVisitedPlaces(ctx *fasthttp.RequestCtx)
 		ctx.Response.Header.SetConnectionClose()
 		ctx.Response.Header.SetContentLength(len("Not Found"))
 		ctx.WriteString("Not Found")
+		userApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -138,6 +148,7 @@ func (userApiHandler *UserApiHandler) GetVisitedPlaces(ctx *fasthttp.RequestCtx)
 			ctx.Response.Header.SetConnectionClose()
 			ctx.Response.Header.SetContentLength(len("Bad Request"))
 			ctx.WriteString("Bad Request")
+			userApiHandler.rateCounter.Incr(1)
 			return
 		}
 
@@ -160,6 +171,7 @@ func (userApiHandler *UserApiHandler) GetVisitedPlaces(ctx *fasthttp.RequestCtx)
 			ctx.Response.Header.SetConnectionClose()
 			ctx.Response.Header.SetContentLength(len("Bad Request"))
 			ctx.WriteString("Bad Request")
+			userApiHandler.rateCounter.Incr(1)
 			return
 		}
 
@@ -182,6 +194,7 @@ func (userApiHandler *UserApiHandler) GetVisitedPlaces(ctx *fasthttp.RequestCtx)
 			ctx.Response.Header.SetConnectionClose()
 			ctx.Response.Header.SetContentLength(len("Bad Request"))
 			ctx.WriteString("Bad Request")
+			userApiHandler.rateCounter.Incr(1)
 			return
 		}
 
@@ -206,6 +219,7 @@ func (userApiHandler *UserApiHandler) GetVisitedPlaces(ctx *fasthttp.RequestCtx)
 			ctx.Response.Header.SetConnectionClose()
 			ctx.Response.Header.SetContentLength(len("Bad Request"))
 			ctx.WriteString("Bad Request")
+			userApiHandler.rateCounter.Incr(1)
 			return
 		}
 
@@ -220,6 +234,7 @@ func (userApiHandler *UserApiHandler) GetVisitedPlaces(ctx *fasthttp.RequestCtx)
 		ctx.Response.Header.SetConnectionClose()
 		ctx.Response.Header.SetContentLength(len("Not Found"))
 		ctx.WriteString("Not Found")
+		userApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -234,6 +249,7 @@ func (userApiHandler *UserApiHandler) GetVisitedPlaces(ctx *fasthttp.RequestCtx)
 	ctx.Response.Header.SetConnectionClose()
 	ctx.Response.Header.SetContentLength(len(visitedPlaceCollectionBytes))
 	ctx.Write(visitedPlaceCollectionBytes)
+	userApiHandler.rateCounter.Incr(1)
 }
 
 func (userApiHandler *UserApiHandler) CreateOrUpdate(ctx *fasthttp.RequestCtx) {
@@ -251,6 +267,7 @@ func (userApiHandler *UserApiHandler) CreateOrUpdate(ctx *fasthttp.RequestCtx) {
 		ctx.Response.Header.SetConnectionClose()
 		ctx.Response.Header.SetContentLength(len("Not Found"))
 		ctx.WriteString("Not Found")
+		userApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -262,6 +279,7 @@ func (userApiHandler *UserApiHandler) CreateOrUpdate(ctx *fasthttp.RequestCtx) {
 		ctx.Response.Header.SetConnectionClose()
 		ctx.Response.Header.SetContentLength(len("Not Found"))
 		ctx.WriteString("Not Found")
+		userApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -273,12 +291,13 @@ func (userApiHandler *UserApiHandler) CreateOrUpdate(ctx *fasthttp.RequestCtx) {
 		ctx.Response.Header.SetConnectionClose()
 		ctx.Response.Header.SetContentLength(len("Not Found"))
 		ctx.WriteString("Not Found")
+		userApiHandler.rateCounter.Incr(1)
 		return
 	}
 
 	newUserMap := make(map[string]interface{})
 
-	err = jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(ctx.PostBody(), &newUserMap)
+	err = jsoniter.ConfigFastest.Unmarshal(ctx.PostBody(), &newUserMap)
 
 	if err != nil {
 		ctx.SetStatusCode(fasthttp.StatusBadRequest)
@@ -286,12 +305,13 @@ func (userApiHandler *UserApiHandler) CreateOrUpdate(ctx *fasthttp.RequestCtx) {
 		ctx.Response.Header.SetConnectionClose()
 		ctx.Response.Header.SetContentLength(len("Bad Request"))
 		ctx.WriteString("Bad Request")
+		userApiHandler.rateCounter.Incr(1)
 		return
 	}
 
 	user := new(entities.User)
 
-	err = jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(userBytes, user)
+	err = jsoniter.ConfigFastest.Unmarshal(userBytes, user)
 
 	if err != nil {
 		userApiHandler.errLogger.Fatalln(err)
@@ -307,6 +327,7 @@ func (userApiHandler *UserApiHandler) CreateOrUpdate(ctx *fasthttp.RequestCtx) {
 			ctx.Response.Header.SetConnectionClose()
 			ctx.Response.Header.SetContentLength(len("Bad Request"))
 			ctx.WriteString("Bad Request")
+			userApiHandler.rateCounter.Incr(1)
 			return
 		}
 
@@ -323,6 +344,7 @@ func (userApiHandler *UserApiHandler) CreateOrUpdate(ctx *fasthttp.RequestCtx) {
 			ctx.Response.Header.SetConnectionClose()
 			ctx.Response.Header.SetContentLength(len("Bad Request"))
 			ctx.WriteString("Bad Request")
+			userApiHandler.rateCounter.Incr(1)
 			return
 		}
 
@@ -339,6 +361,7 @@ func (userApiHandler *UserApiHandler) CreateOrUpdate(ctx *fasthttp.RequestCtx) {
 			ctx.Response.Header.SetConnectionClose()
 			ctx.Response.Header.SetContentLength(len("Bad Request"))
 			ctx.WriteString("Bad Request")
+			userApiHandler.rateCounter.Incr(1)
 			return
 		}
 
@@ -355,6 +378,7 @@ func (userApiHandler *UserApiHandler) CreateOrUpdate(ctx *fasthttp.RequestCtx) {
 			ctx.Response.Header.SetConnectionClose()
 			ctx.Response.Header.SetContentLength(len("Bad Request"))
 			ctx.WriteString("Bad Request")
+			userApiHandler.rateCounter.Incr(1)
 			return
 		}
 
@@ -371,6 +395,7 @@ func (userApiHandler *UserApiHandler) CreateOrUpdate(ctx *fasthttp.RequestCtx) {
 			ctx.Response.Header.SetConnectionClose()
 			ctx.Response.Header.SetContentLength(len("Bad Request"))
 			ctx.WriteString("Bad Request")
+			userApiHandler.rateCounter.Incr(1)
 			return
 		}
 
@@ -386,16 +411,18 @@ func (userApiHandler *UserApiHandler) CreateOrUpdate(ctx *fasthttp.RequestCtx) {
 	ctx.Response.Header.SetConnectionClose()
 	ctx.Response.Header.SetContentLength(len([]byte("{}")))
 	ctx.Write([]byte("{}"))
+	userApiHandler.rateCounter.Incr(1)
 }
 
 func (userApiHandler *UserApiHandler) Create(ctx *fasthttp.RequestCtx) {
 
 	newUserMap := make(map[string]interface{})
 
-	err := jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(ctx.PostBody(), &newUserMap)
+	err := jsoniter.ConfigFastest.Unmarshal(ctx.PostBody(), &newUserMap)
 
 	if err != nil {
 		userApiHandler.returnBadRequest(ctx)
+		userApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -403,6 +430,7 @@ func (userApiHandler *UserApiHandler) Create(ctx *fasthttp.RequestCtx) {
 
 	if !ok {
 		userApiHandler.returnBadRequest(ctx)
+		userApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -410,6 +438,7 @@ func (userApiHandler *UserApiHandler) Create(ctx *fasthttp.RequestCtx) {
 
 	if !typeOk {
 		userApiHandler.returnBadRequest(ctx)
+		userApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -419,6 +448,7 @@ func (userApiHandler *UserApiHandler) Create(ctx *fasthttp.RequestCtx) {
 
 	if userBytes != nil {
 		userApiHandler.returnBadRequest(ctx)
+		userApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -426,6 +456,7 @@ func (userApiHandler *UserApiHandler) Create(ctx *fasthttp.RequestCtx) {
 
 	if !ok {
 		userApiHandler.returnBadRequest(ctx)
+		userApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -433,6 +464,7 @@ func (userApiHandler *UserApiHandler) Create(ctx *fasthttp.RequestCtx) {
 
 	if !typeOk || len(email) > 100 {
 		userApiHandler.returnBadRequest(ctx)
+		userApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -440,6 +472,7 @@ func (userApiHandler *UserApiHandler) Create(ctx *fasthttp.RequestCtx) {
 
 	if isEmailExist {
 		userApiHandler.returnBadRequest(ctx)
+		userApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -447,6 +480,7 @@ func (userApiHandler *UserApiHandler) Create(ctx *fasthttp.RequestCtx) {
 
 	if !ok {
 		userApiHandler.returnBadRequest(ctx)
+		userApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -454,6 +488,7 @@ func (userApiHandler *UserApiHandler) Create(ctx *fasthttp.RequestCtx) {
 
 	if !ok {
 		userApiHandler.returnBadRequest(ctx)
+		userApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -461,6 +496,7 @@ func (userApiHandler *UserApiHandler) Create(ctx *fasthttp.RequestCtx) {
 
 	if !ok {
 		userApiHandler.returnBadRequest(ctx)
+		userApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -468,6 +504,7 @@ func (userApiHandler *UserApiHandler) Create(ctx *fasthttp.RequestCtx) {
 
 	if !ok {
 		userApiHandler.returnBadRequest(ctx)
+		userApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -481,6 +518,7 @@ func (userApiHandler *UserApiHandler) Create(ctx *fasthttp.RequestCtx) {
 
 	if !typeOk || len(firstName) > 50 {
 		userApiHandler.returnBadRequest(ctx)
+		userApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -490,6 +528,7 @@ func (userApiHandler *UserApiHandler) Create(ctx *fasthttp.RequestCtx) {
 
 	if !typeOk || len(lastName) > 50 {
 		userApiHandler.returnBadRequest(ctx)
+		userApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -499,6 +538,7 @@ func (userApiHandler *UserApiHandler) Create(ctx *fasthttp.RequestCtx) {
 
 	if !typeOk || (gender != "m" && gender != "f") {
 		userApiHandler.returnBadRequest(ctx)
+		userApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -508,6 +548,7 @@ func (userApiHandler *UserApiHandler) Create(ctx *fasthttp.RequestCtx) {
 
 	if !typeOk {
 		userApiHandler.returnBadRequest(ctx)
+		userApiHandler.rateCounter.Incr(1)
 		return
 	}
 
@@ -522,6 +563,7 @@ func (userApiHandler *UserApiHandler) Create(ctx *fasthttp.RequestCtx) {
 	ctx.Response.Header.SetConnectionClose()
 	ctx.Response.Header.SetContentLength(len([]byte("{}")))
 	ctx.Write([]byte("{}"))
+	userApiHandler.rateCounter.Incr(1)
 }
 
 func (userApiHandler *UserApiHandler) returnBadRequest(ctx *fasthttp.RequestCtx) {

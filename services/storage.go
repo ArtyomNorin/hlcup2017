@@ -59,7 +59,7 @@ func (storage *Storage) Init(pathToArchive string, countConcurrentFiles int, wai
 
 					userCollection := new(entities.UserCollection)
 
-					err := jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(jsonOfFile, userCollection)
+					err := jsoniter.ConfigFastest.Unmarshal(jsonOfFile, userCollection)
 
 					if err != nil {
 						storage.errorLogger.Fatalln(err)
@@ -76,7 +76,7 @@ func (storage *Storage) Init(pathToArchive string, countConcurrentFiles int, wai
 
 					locationCollection := new(entities.LocationCollection)
 
-					err := jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(jsonOfFile, locationCollection)
+					err := jsoniter.ConfigFastest.Unmarshal(jsonOfFile, locationCollection)
 
 					if err != nil {
 						storage.errorLogger.Fatalln(err)
@@ -93,7 +93,7 @@ func (storage *Storage) Init(pathToArchive string, countConcurrentFiles int, wai
 
 					visitCollection := new(entities.VisitCollection)
 
-					err := jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(jsonOfFile, visitCollection)
+					err := jsoniter.ConfigFastest.Unmarshal(jsonOfFile, visitCollection)
 
 					if err != nil {
 						storage.errorLogger.Fatalln(err)
@@ -252,7 +252,7 @@ func (storage *Storage) GetVisitedPlacesByUser(visitFilter *VisitsFilter) *entit
 
 		visitBytes := storage.GetVisitById(visitId)
 
-		err := jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(visitBytes, visit)
+		err := jsoniter.ConfigFastest.Unmarshal(visitBytes, visit)
 
 		if err != nil {
 			storage.errorLogger.Fatalln(err)
@@ -262,7 +262,7 @@ func (storage *Storage) GetVisitedPlacesByUser(visitFilter *VisitsFilter) *entit
 
 		locationBytes := storage.GetLocationById(*visit.Location)
 
-		err = jsoniter.ConfigCompatibleWithStandardLibrary.Unmarshal(locationBytes, location)
+		err = jsoniter.ConfigFastest.Unmarshal(locationBytes, location)
 
 		if err != nil {
 			storage.errorLogger.Fatalln(err)
