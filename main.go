@@ -29,7 +29,7 @@ func main() {
 
 	startTime := time.Now()
 
-	storage.Init("/home/artyomnorin/projects/go/src/hlcup/data/full/data.zip", 4, waitGroup)
+	storage.Init("/tmp/data/data.zip", 4, waitGroup)
 
 	waitGroup.Wait()
 
@@ -39,8 +39,8 @@ func main() {
 	runtime.GC()
 	PrintMemUsage()
 
-	userApiHandler := handlers.NewUserApiHandler(storage, errorLogger, infoLogger, counter, "/home/artyomnorin/projects/go/src/hlcup/data/full/options.txt")
-	locationApiHandler := handlers.NewLocationApiHandler(storage, errorLogger, infoLogger, counter,  "/home/artyomnorin/projects/go/src/hlcup/data/full/options.txt")
+	userApiHandler := handlers.NewUserApiHandler(storage, errorLogger, infoLogger, counter, "/tmp/data/options.txt")
+	locationApiHandler := handlers.NewLocationApiHandler(storage, errorLogger, infoLogger, counter,  "/tmp/data/options.txt")
 	visitApiHandler := handlers.NewVisitApiHandler(storage, errorLogger, infoLogger, counter)
 
 	router := fasthttprouter.New()
@@ -64,7 +64,7 @@ func main() {
 	}()
 
 	infoLogger.Println("Server is listening...")
-	err := fasthttp.ListenAndServe(":8080", router.Handler)
+	err := fasthttp.ListenAndServe(":80", router.Handler)
 
 	if err != nil {
 		errorLogger.Fatalln(err)

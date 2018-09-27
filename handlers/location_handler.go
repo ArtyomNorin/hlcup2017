@@ -48,7 +48,7 @@ func (locationApiHandler *LocationApiHandler) GetById(ctx *fasthttp.RequestCtx) 
 	if !govalidator.IsNumeric(locationIdString) || !ok {
 		ctx.SetStatusCode(fasthttp.StatusNotFound)
 		ctx.Response.Header.SetContentType("text/plain; charset=utf8")
-		ctx.Response.Header.SetConnectionClose()
+		ctx.Response.Header.Set("Connection", "keep-alive")
 		ctx.Response.Header.SetContentLength(len("Not Found"))
 		ctx.WriteString("Not Found")
 		locationApiHandler.rateCounter.Incr(1)
@@ -60,7 +60,7 @@ func (locationApiHandler *LocationApiHandler) GetById(ctx *fasthttp.RequestCtx) 
 	if err != nil {
 		ctx.SetStatusCode(fasthttp.StatusNotFound)
 		ctx.Response.Header.SetContentType("text/plain; charset=utf8")
-		ctx.Response.Header.SetConnectionClose()
+		ctx.Response.Header.Set("Connection", "keep-alive")
 		ctx.Response.Header.SetContentLength(len("Not Found"))
 		ctx.WriteString("Not Found")
 		locationApiHandler.rateCounter.Incr(1)
@@ -72,14 +72,14 @@ func (locationApiHandler *LocationApiHandler) GetById(ctx *fasthttp.RequestCtx) 
 	if location == nil {
 		ctx.SetStatusCode(fasthttp.StatusNotFound)
 		ctx.Response.Header.SetContentType("text/plain; charset=utf8")
-		ctx.Response.Header.SetConnectionClose()
+		ctx.Response.Header.Set("Connection", "keep-alive")
 		ctx.Response.Header.SetContentLength(len("Not Found"))
 		ctx.WriteString("Not Found")
 		locationApiHandler.rateCounter.Incr(1)
 	} else {
 		ctx.SetStatusCode(fasthttp.StatusOK)
 		ctx.Response.Header.SetContentType("application/json")
-		ctx.Response.Header.SetConnectionClose()
+		ctx.Response.Header.Set("Connection", "keep-alive")
 		ctx.Response.Header.SetContentLength(len(location))
 		ctx.Write(location)
 		locationApiHandler.rateCounter.Incr(1)
@@ -93,7 +93,7 @@ func (locationApiHandler *LocationApiHandler) GetAverageMark(ctx *fasthttp.Reque
 	if !govalidator.IsNumeric(locationIdString) || !ok {
 		ctx.SetStatusCode(fasthttp.StatusNotFound)
 		ctx.Response.Header.SetContentType("text/plain; charset=utf8")
-		ctx.Response.Header.SetConnectionClose()
+		ctx.Response.Header.Set("Connection", "keep-alive")
 		ctx.Response.Header.SetContentLength(len("Not Found"))
 		ctx.WriteString("Not Found")
 		locationApiHandler.rateCounter.Incr(1)
@@ -105,7 +105,7 @@ func (locationApiHandler *LocationApiHandler) GetAverageMark(ctx *fasthttp.Reque
 	if err != nil {
 		ctx.SetStatusCode(fasthttp.StatusNotFound)
 		ctx.Response.Header.SetContentType("text/plain; charset=utf8")
-		ctx.Response.Header.SetConnectionClose()
+		ctx.Response.Header.Set("Connection", "keep-alive")
 		ctx.Response.Header.SetContentLength(len("Not Found"))
 		ctx.WriteString("Not Found")
 		locationApiHandler.rateCounter.Incr(1)
@@ -125,7 +125,7 @@ func (locationApiHandler *LocationApiHandler) GetAverageMark(ctx *fasthttp.Reque
 		if !govalidator.IsNumeric(fromDateString) || fromDateString == "" {
 			ctx.SetStatusCode(fasthttp.StatusBadRequest)
 			ctx.Response.Header.SetContentType("text/plain; charset=utf8")
-			ctx.Response.Header.SetConnectionClose()
+			ctx.Response.Header.Set("Connection", "keep-alive")
 			ctx.Response.Header.SetContentLength(len("Bad Request"))
 			ctx.WriteString("Bad Request")
 			locationApiHandler.rateCounter.Incr(1)
@@ -148,7 +148,7 @@ func (locationApiHandler *LocationApiHandler) GetAverageMark(ctx *fasthttp.Reque
 		if !govalidator.IsNumeric(toDateString) || toDateString == "" {
 			ctx.SetStatusCode(fasthttp.StatusBadRequest)
 			ctx.Response.Header.SetContentType("text/plain; charset=utf8")
-			ctx.Response.Header.SetConnectionClose()
+			ctx.Response.Header.Set("Connection", "keep-alive")
 			ctx.Response.Header.SetContentLength(len("Bad Request"))
 			ctx.WriteString("Bad Request")
 			locationApiHandler.rateCounter.Incr(1)
@@ -171,7 +171,7 @@ func (locationApiHandler *LocationApiHandler) GetAverageMark(ctx *fasthttp.Reque
 		if !govalidator.IsNumeric(fromAgeString) || fromAgeString == "" {
 			ctx.SetStatusCode(fasthttp.StatusBadRequest)
 			ctx.Response.Header.SetContentType("text/plain; charset=utf8")
-			ctx.Response.Header.SetConnectionClose()
+			ctx.Response.Header.Set("Connection", "keep-alive")
 			ctx.Response.Header.SetContentLength(len("Bad Request"))
 			ctx.WriteString("Bad Request")
 			locationApiHandler.rateCounter.Incr(1)
@@ -194,7 +194,7 @@ func (locationApiHandler *LocationApiHandler) GetAverageMark(ctx *fasthttp.Reque
 		if !govalidator.IsNumeric(toAgeString) || toAgeString == "" {
 			ctx.SetStatusCode(fasthttp.StatusBadRequest)
 			ctx.Response.Header.SetContentType("text/plain; charset=utf8")
-			ctx.Response.Header.SetConnectionClose()
+			ctx.Response.Header.Set("Connection", "keep-alive")
 			ctx.Response.Header.SetContentLength(len("Bad Request"))
 			ctx.WriteString("Bad Request")
 			locationApiHandler.rateCounter.Incr(1)
@@ -217,7 +217,7 @@ func (locationApiHandler *LocationApiHandler) GetAverageMark(ctx *fasthttp.Reque
 		if gender == "" || (gender != "m" && gender != "f") {
 			ctx.SetStatusCode(fasthttp.StatusBadRequest)
 			ctx.Response.Header.SetContentType("text/plain; charset=utf8")
-			ctx.Response.Header.SetConnectionClose()
+			ctx.Response.Header.Set("Connection", "keep-alive")
 			ctx.Response.Header.SetContentLength(len("Bad Request"))
 			ctx.WriteString("Bad Request")
 			locationApiHandler.rateCounter.Incr(1)
@@ -232,7 +232,7 @@ func (locationApiHandler *LocationApiHandler) GetAverageMark(ctx *fasthttp.Reque
 	if locationBytes == nil {
 		ctx.SetStatusCode(fasthttp.StatusNotFound)
 		ctx.Response.Header.SetContentType("text/plain; charset=utf8")
-		ctx.Response.Header.SetConnectionClose()
+		ctx.Response.Header.Set("Connection", "keep-alive")
 		ctx.Response.Header.SetContentLength(len("Not Found"))
 		ctx.WriteString("Not Found")
 		locationApiHandler.rateCounter.Incr(1)
@@ -292,7 +292,7 @@ func (locationApiHandler *LocationApiHandler) GetAverageMark(ctx *fasthttp.Reque
 
 	ctx.SetStatusCode(fasthttp.StatusOK)
 	ctx.Response.Header.SetContentType("application/json")
-	ctx.Response.Header.SetConnectionClose()
+	ctx.Response.Header.Set("Connection", "keep-alive")
 	ctx.Response.Header.SetContentLength(len(locationAvgMarkBytes))
 	ctx.Write(locationAvgMarkBytes)
 	locationApiHandler.rateCounter.Incr(1)
@@ -310,7 +310,7 @@ func (locationApiHandler *LocationApiHandler) CreateOrUpdate(ctx *fasthttp.Reque
 	if !govalidator.IsNumeric(locationIdString) || !ok {
 		ctx.SetStatusCode(fasthttp.StatusNotFound)
 		ctx.Response.Header.SetContentType("text/plain; charset=utf8")
-		ctx.Response.Header.SetConnectionClose()
+		ctx.Response.Header.Set("Connection", "keep-alive")
 		ctx.Response.Header.SetContentLength(len("Not Found"))
 		ctx.WriteString("Not Found")
 		locationApiHandler.rateCounter.Incr(1)
@@ -322,7 +322,7 @@ func (locationApiHandler *LocationApiHandler) CreateOrUpdate(ctx *fasthttp.Reque
 	if err != nil {
 		ctx.SetStatusCode(fasthttp.StatusNotFound)
 		ctx.Response.Header.SetContentType("text/plain; charset=utf8")
-		ctx.Response.Header.SetConnectionClose()
+		ctx.Response.Header.Set("Connection", "keep-alive")
 		ctx.Response.Header.SetContentLength(len("Not Found"))
 		ctx.WriteString("Not Found")
 		locationApiHandler.rateCounter.Incr(1)
@@ -334,7 +334,7 @@ func (locationApiHandler *LocationApiHandler) CreateOrUpdate(ctx *fasthttp.Reque
 	if locationBytes == nil {
 		ctx.SetStatusCode(fasthttp.StatusNotFound)
 		ctx.Response.Header.SetContentType("text/plain; charset=utf8")
-		ctx.Response.Header.SetConnectionClose()
+		ctx.Response.Header.Set("Connection", "keep-alive")
 		ctx.Response.Header.SetContentLength(len("Not Found"))
 		ctx.WriteString("Not Found")
 		locationApiHandler.rateCounter.Incr(1)
@@ -348,7 +348,7 @@ func (locationApiHandler *LocationApiHandler) CreateOrUpdate(ctx *fasthttp.Reque
 	if err != nil {
 		ctx.SetStatusCode(fasthttp.StatusBadRequest)
 		ctx.Response.Header.SetContentType("text/plain; charset=utf8")
-		ctx.Response.Header.SetConnectionClose()
+		ctx.Response.Header.Set("Connection", "keep-alive")
 		ctx.Response.Header.SetContentLength(len("Bad Request"))
 		ctx.WriteString("Bad Request")
 		locationApiHandler.rateCounter.Incr(1)
@@ -370,7 +370,7 @@ func (locationApiHandler *LocationApiHandler) CreateOrUpdate(ctx *fasthttp.Reque
 		if value == nil || !typeOk {
 			ctx.SetStatusCode(fasthttp.StatusBadRequest)
 			ctx.Response.Header.SetContentType("text/plain; charset=utf8")
-			ctx.Response.Header.SetConnectionClose()
+			ctx.Response.Header.Set("Connection", "keep-alive")
 			ctx.Response.Header.SetContentLength(len("Bad Request"))
 			ctx.WriteString("Bad Request")
 			locationApiHandler.rateCounter.Incr(1)
@@ -387,7 +387,7 @@ func (locationApiHandler *LocationApiHandler) CreateOrUpdate(ctx *fasthttp.Reque
 		if value == nil || !typeOk || len(country) > 50 {
 			ctx.SetStatusCode(fasthttp.StatusBadRequest)
 			ctx.Response.Header.SetContentType("text/plain; charset=utf8")
-			ctx.Response.Header.SetConnectionClose()
+			ctx.Response.Header.Set("Connection", "keep-alive")
 			ctx.Response.Header.SetContentLength(len("Bad Request"))
 			ctx.WriteString("Bad Request")
 			locationApiHandler.rateCounter.Incr(1)
@@ -404,7 +404,7 @@ func (locationApiHandler *LocationApiHandler) CreateOrUpdate(ctx *fasthttp.Reque
 		if value == nil || !typeOk || len(city) > 50 {
 			ctx.SetStatusCode(fasthttp.StatusBadRequest)
 			ctx.Response.Header.SetContentType("text/plain; charset=utf8")
-			ctx.Response.Header.SetConnectionClose()
+			ctx.Response.Header.Set("Connection", "keep-alive")
 			ctx.Response.Header.SetContentLength(len("Bad Request"))
 			ctx.WriteString("Bad Request")
 			locationApiHandler.rateCounter.Incr(1)
@@ -421,7 +421,7 @@ func (locationApiHandler *LocationApiHandler) CreateOrUpdate(ctx *fasthttp.Reque
 		if value == nil || !typeOk || distance <= 0 {
 			ctx.SetStatusCode(fasthttp.StatusBadRequest)
 			ctx.Response.Header.SetContentType("text/plain; charset=utf8")
-			ctx.Response.Header.SetConnectionClose()
+			ctx.Response.Header.Set("Connection", "keep-alive")
 			ctx.Response.Header.SetContentLength(len("Bad Request"))
 			ctx.WriteString("Bad Request")
 			locationApiHandler.rateCounter.Incr(1)
@@ -437,7 +437,7 @@ func (locationApiHandler *LocationApiHandler) CreateOrUpdate(ctx *fasthttp.Reque
 
 	ctx.SetStatusCode(fasthttp.StatusOK)
 	ctx.Response.Header.SetContentType("application/json")
-	ctx.Response.Header.SetConnectionClose()
+	ctx.Response.Header.Set("Connection", "keep-alive")
 	ctx.Response.Header.SetContentLength(len([]byte("{}")))
 	ctx.Write([]byte("{}"))
 	locationApiHandler.rateCounter.Incr(1)
@@ -563,7 +563,7 @@ func (locationApiHandler *LocationApiHandler) Create(ctx *fasthttp.RequestCtx) {
 
 	ctx.SetStatusCode(fasthttp.StatusOK)
 	ctx.Response.Header.SetContentType("application/json")
-	ctx.Response.Header.SetConnectionClose()
+	ctx.Response.Header.Set("Connection", "keep-alive")
 	ctx.Response.Header.SetContentLength(len([]byte("{}")))
 	ctx.Write([]byte("{}"))
 	locationApiHandler.rateCounter.Incr(1)
@@ -572,7 +572,7 @@ func (locationApiHandler *LocationApiHandler) Create(ctx *fasthttp.RequestCtx) {
 func (locationApiHandler *LocationApiHandler) returnBadRequest(ctx *fasthttp.RequestCtx) {
 	ctx.SetStatusCode(fasthttp.StatusBadRequest)
 	ctx.Response.Header.SetContentType("text/plain; charset=utf8")
-	ctx.Response.Header.SetConnectionClose()
+	ctx.Response.Header.Set("Connection", "keep-alive")
 	ctx.Response.Header.SetContentLength(len("Bad Request"))
 	ctx.WriteString("Bad Request")
 }
