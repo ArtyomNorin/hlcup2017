@@ -2,16 +2,16 @@ package main
 
 import (
 	"fmt"
-	"hlcup/services"
+	"github.com/ArtyomNorin/hlcup2017/handlers"
+	"github.com/ArtyomNorin/hlcup2017/services"
+	"github.com/buaazp/fasthttprouter"
+	"github.com/paulbellamy/ratecounter"
+	"github.com/valyala/fasthttp"
 	"log"
 	"os"
 	"runtime"
 	"sync"
 	"time"
-	"github.com/buaazp/fasthttprouter"
-	"hlcup/handlers"
-	"github.com/valyala/fasthttp"
-	"github.com/paulbellamy/ratecounter"
 )
 
 func main() {
@@ -40,7 +40,7 @@ func main() {
 	PrintMemUsage()
 
 	userApiHandler := handlers.NewUserApiHandler(storage, errorLogger, infoLogger, counter, "/tmp/data/options.txt")
-	locationApiHandler := handlers.NewLocationApiHandler(storage, errorLogger, infoLogger, counter,  "/tmp/data/options.txt")
+	locationApiHandler := handlers.NewLocationApiHandler(storage, errorLogger, infoLogger, counter, "/tmp/data/options.txt")
 	visitApiHandler := handlers.NewVisitApiHandler(storage, errorLogger, infoLogger, counter)
 
 	router := fasthttprouter.New()

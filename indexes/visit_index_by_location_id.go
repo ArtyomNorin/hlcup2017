@@ -1,9 +1,9 @@
 package indexes
 
 import (
-	"hlcup/entities"
+	"github.com/ArtyomNorin/hlcup2017/entities"
 	"sync"
-	)
+)
 
 type VisitIndexByLocationId struct {
 	visits map[uint][]uint

@@ -3,15 +3,15 @@ package services
 import (
 	"archive/zip"
 	"fmt"
-	"hlcup/entities"
-	"hlcup/indexes"
+	"github.com/ArtyomNorin/hlcup2017/entities"
+	"github.com/ArtyomNorin/hlcup2017/indexes"
+	"github.com/json-iterator/go"
 	"io/ioutil"
 	"log"
+	"sort"
 	"strings"
 	"sync"
 	"time"
-	"sort"
-	"github.com/json-iterator/go"
 )
 
 type Storage struct {
@@ -268,8 +268,7 @@ func (storage *Storage) GetVisitedPlacesByUser(visitFilter *VisitsFilter) *entit
 			storage.errorLogger.Fatalln(err)
 		}
 
-		if
-		!visitFilter.CheckFromDate(*visit.VisitedAt) ||
+		if !visitFilter.CheckFromDate(*visit.VisitedAt) ||
 			!visitFilter.CheckToDate(*visit.VisitedAt) ||
 			!visitFilter.CheckToDistance(*location.Distance) ||
 			!visitFilter.CheckCountry(*location.Country) {

@@ -1,19 +1,19 @@
 package handlers
 
 import (
-	"hlcup/services"
-	"log"
-	"github.com/valyala/fasthttp"
-	"github.com/asaskevich/govalidator"
-	"strconv"
-	"time"
-	"os"
 	"bufio"
 	"encoding/json"
-	"strings"
+	"github.com/ArtyomNorin/hlcup2017/entities"
+	"github.com/ArtyomNorin/hlcup2017/services"
+	"github.com/asaskevich/govalidator"
 	"github.com/json-iterator/go"
-	"hlcup/entities"
 	"github.com/paulbellamy/ratecounter"
+	"github.com/valyala/fasthttp"
+	"log"
+	"os"
+	"strconv"
+	"strings"
+	"time"
 )
 
 type UserApiHandler struct {

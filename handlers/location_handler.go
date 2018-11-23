@@ -1,19 +1,19 @@
 package handlers
 
 import (
-	"hlcup/services"
-	"log"
-	"github.com/valyala/fasthttp"
-	"github.com/asaskevich/govalidator"
-	"strconv"
-	"os"
 	"bufio"
-	"time"
-	"hlcup/entities"
-	"math"
+	"github.com/ArtyomNorin/hlcup2017/entities"
+	"github.com/ArtyomNorin/hlcup2017/services"
+	"github.com/asaskevich/govalidator"
 	"github.com/json-iterator/go"
-	"strings"
 	"github.com/paulbellamy/ratecounter"
+	"github.com/valyala/fasthttp"
+	"log"
+	"math"
+	"os"
+	"strconv"
+	"strings"
+	"time"
 )
 
 type LocationApiHandler struct {

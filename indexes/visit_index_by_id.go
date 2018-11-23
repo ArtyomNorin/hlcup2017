@@ -1,9 +1,9 @@
 package indexes
 
 import (
-		"hlcup/entities"
-	"sync"
+	"github.com/ArtyomNorin/hlcup2017/entities"
 	"github.com/json-iterator/go"
+	"sync"
 )
 
 type VisitIndexById struct {

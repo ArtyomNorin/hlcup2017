@@ -1,15 +1,15 @@
 package handlers
 
 import (
-	"hlcup/services"
-	"log"
-	"github.com/valyala/fasthttp"
+	"github.com/ArtyomNorin/hlcup2017/entities"
+	"github.com/ArtyomNorin/hlcup2017/services"
 	"github.com/asaskevich/govalidator"
-	"strconv"
 	"github.com/json-iterator/go"
-	"hlcup/entities"
-	"strings"
 	"github.com/paulbellamy/ratecounter"
+	"github.com/valyala/fasthttp"
+	"log"
+	"strconv"
+	"strings"
 )
 
 type VisitApiHandler struct {
